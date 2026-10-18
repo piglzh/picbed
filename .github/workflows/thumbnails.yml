@@ -1,4 +1,4 @@
-name: Generate Thumbnails
+name: Generate Thumbnails and Gallery
 
 on:
   push:
@@ -16,29 +16,51 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 安装 ImageMagick
       - name: Install ImageMagick
         run: sudo apt-get update && sudo apt-get install -y imagemagick
 
-      # 运行脚本生成缩略图
+      # 1. 生成缩略图
       - name: Generate thumbnails
+        shell: bash
         run: |
           mkdir -p images/thumbnails
-          for img in images/full/*.{jpg,jpeg,png,JPG,PNG}; do
-            # 如果文件不存在则跳过
+          # 匹配常见图片格式（包括大写后缀）
+          for img in images/full/*.{jpg,jpeg,png,JPG,JPEG,PNG}; do
             [ -f "$img" ] || continue
             filename=$(basename "$img")
-            # 跳过 readme.md 等非图片文件
+            # 跳过非图片文件（如 readme.md）
             if [[ "$filename" == *"readme"* ]]; then continue; fi
             
-            echo "正在处理: $filename"
+            echo "正在处理缩略图: $filename"
             # 生成固定宽度 300px 的缩略图，保存到 thumbnails 根目录
             convert "$img" -resize 300x "images/thumbnails/$filename"
           done
 
-      # 提交并推送
-      - name: Commit and push thumbnails
+      # 2. 自动生成 JSON 清单文件
+      - name: Generate gallery JSON
+        shell: bash
+        run: |
+          echo "[" > images/gallery.json
+          first=true
+          for img in images/full/*.{jpg,jpeg,png,JPG,JPEG,PNG}; do
+            [ -f "$img" ] || continue
+            filename=$(basename "$img")
+            if [[ "$filename" == *"readme"* ]]; then continue; fi
+            
+            if [ "$first" = true ]; then
+              first=false
+            else
+              echo "," >> images/gallery.json
+            fi
+            echo "  \"$filename\"" >> images/gallery.json
+          done
+          echo "]" >> images/gallery.json
+          echo "生成的 gallery.json 内容如下："
+          cat images/gallery.json
+
+      # 3. 提交并推送
+      - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: auto-generate thumbnails [skip ci]"
-          file_pattern: 'images/thumbnails/*'
+          commit_message: "chore: auto-generate thumbnails and gallery list [skip ci]"
+          file_pattern: 'images/thumbnails/* images/gallery.json'
