@@ -24,29 +24,26 @@ jobs:
         shell: bash
         run: |
           mkdir -p images/thumbnails
-          for img in images/full/*.{jpg,jpeg,png,JPG,JPEG,PNG}; do
-            [ -f "$img" ] || continue
+          while IFS= read -r -d '' img; do
             filename=$(basename "$img")
             if [[ "$filename" == *"readme"* ]]; then continue; fi
             echo "正在处理缩略图: $filename"
             convert "$img" -resize 300x "images/thumbnails/$filename"
-          done
+          done < <(find images/full -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) -print0)
 
       # 2. 清理不再需要的“孤儿”缩略图
       - name: Clean up orphan thumbnails
         shell: bash
         run: |
-          for thumb in images/thumbnails/*.{jpg,jpeg,png,JPG,JPEG,PNG}; do
-            [ -f "$thumb" ] || continue
+          while IFS= read -r -d '' thumb; do
             filename=$(basename "$thumb")
             if [[ "$filename" == *"readme"* ]]; then continue; fi
             
-            # 如果原图目录里找不到同名文件，说明原图被删了，清理掉缩略图
             if [ ! -f "images/full/$filename" ]; then
               echo "原图已被删除，清理多余缩略图: $filename"
               rm "$thumb"
             fi
-          done
+          done < <(find images/thumbnails -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) -print0)
 
       # 3. 自动生成 JSON 清单文件
       - name: Generate gallery JSON
@@ -54,8 +51,7 @@ jobs:
         run: |
           echo "[" > images/gallery.json
           first=true
-          for img in images/full/*.{jpg,jpeg,png,JPG,JPEG,PNG}; do
-            [ -f "$img" ] || continue
+          while IFS= read -r -d '' img; do
             filename=$(basename "$img")
             if [[ "$filename" == *"readme"* ]]; then continue; fi
             
@@ -65,7 +61,7 @@ jobs:
               echo "," >> images/gallery.json
             fi
             echo "  \"$filename\"" >> images/gallery.json
-          done
+          done < <(find images/full -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) -print0 | sort -z)
           echo "]" >> images/gallery.json
 
       # 4. 提交并推送
