@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的图片画廊</title>
-    <!-- 引入 LiteLight CSS -->
     <link rel="stylesheet" href="https://unpkg.com/litelight-js@latest/dist/lite-light.min.css">
     <style>
         .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 20px; }
@@ -13,19 +12,17 @@
 </head>
 <body>
     <div class="gallery">
-        <!-- src是缩略图，data-lightbox是大图地址 -->
-        <img src="images/thumbnails/photo1.jpg" 
-             data-lightbox="images/full/photo1.jpg" 
-             alt="照片 1">
-        <img src="images/thumbnails/photo2.jpg" 
-             data-lightbox="images/full/photo2.jpg" 
-             alt="照片 2">
-        <!-- 按此格式继续添加更多图片 -->
+        <img src="images/thumbnails/999c23fe97c34451a2c8740cced127ec_noop.png"
+             data-lightbox="images/full/999c23fe97c34451a2c8740cced127ec_noop.png"
+             alt="图片 1">
+        <img src="images/thumbnails/PFTmjGi1hzpfAC9.jpg"
+             data-lightbox="images/full/PFTmjGi1hzpfAC9.jpg"
+             alt="图片 2">
     </div>
 
     <script type="module">
         import { init } from 'https://unpkg.com/litelight-js@latest/dist/lite-light.min.js';
-        init(); // 自动查找所有带 data-lightbox 属性的图片
+        init();
     </script>
 </body>
 </html>
