@@ -75,8 +75,8 @@ jobs:
           echo "]" >> images/gallery.json
 
       # 4. 提交并推送
-- name: Commit and push changes
-  uses: stefanzweifel/git-auto-commit-action@v7
+          - name: Commit and push changes
+            uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: auto-update thumbnails and gallery list [skip ci]"
           file_pattern: 'images/thumbnails/* images/gallery.json'
