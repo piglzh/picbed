@@ -16,15 +16,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Generate thumbnails
-        uses: subic/ghaction-thumbnails@v1.1
-        with:
-          source: 'images/full'
-          output: 'images/thumbnails'
-          sizes: '300'
+      # 安装 ImageMagick
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
 
+      # 运行脚本生成缩略图
+      - name: Generate thumbnails
+        run: |
+          mkdir -p images/thumbnails
+          for img in images/full/*.{jpg,jpeg,png,JPG,PNG}; do
+            # 如果文件不存在则跳过
+            [ -f "$img" ] || continue
+            filename=$(basename "$img")
+            # 跳过 readme.md 等非图片文件
+            if [[ "$filename" == *"readme"* ]]; then continue; fi
+            
+            echo "正在处理: $filename"
+            # 生成固定宽度 300px 的缩略图，保存到 thumbnails 根目录
+            convert "$img" -resize 300x "images/thumbnails/$filename"
+          done
+
+      # 提交并推送
       - name: Commit and push thumbnails
-        uses: stefanzweifel/git-auto-commit-action@v7
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: auto-generate thumbnails [skip ci]"
           file_pattern: 'images/thumbnails/*'
