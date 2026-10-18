@@ -13,30 +13,36 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
+      # 升级到 v5，消除 Node.js 20 的警告
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      # 安装 ImageMagick
-      - name: Install ImageMagick
-        run: sudo apt-get update && sudo apt-get install -y imagemagick
+      # 安装 ImageMagick 以及 AVIF 解码器插件
+      - name: Install ImageMagick and AVIF support
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick libheif-examples
+          # 解除 ImageMagick 对 AVIF 的安全限制（如果有的话）
+          sudo sed -i '/AVIF/d' /etc/ImageMagick-6/policy.xml || true
 
-      # 1. 生成缩略图（已增加 avif）
+      # 1. 生成缩略图
       - name: Generate thumbnails
         shell: bash
         run: |
           mkdir -p images/thumbnails
-          # 匹配新增了 avif
           for img in images/full/*.{jpg,jpeg,png,avif,JPG,JPEG,PNG,AVIF}; do
             [ -f "$img" ] || continue
             filename=$(basename "$img")
             if [[ "$filename" == *"readme"* ]]; then continue; fi
             
             echo "正在处理缩略图: $filename"
-            # 将 avif 转换为缩略图（注意：这里生成的缩略图依然保留 .avif 后缀）
-            convert "$img" -resize 300x "images/thumbnails/$filename"
+            # 加入容错：如果某张图转换失败，打印警告但继续处理下一张，不中断整个任务
+            if ! convert "$img" -resize 300x "images/thumbnails/$filename"; then
+              echo "::warning::生成缩略图失败，可能是格式不支持: $filename"
+            fi
           done
 
-      # 2. 清理不再需要的“孤儿”缩略图（已增加 avif）
+      # 2. 清理不再需要的“孤儿”缩略图
       - name: Clean up orphan thumbnails
         shell: bash
         run: |
@@ -51,7 +57,7 @@ jobs:
             fi
           done
 
-      # 3. 自动生成 JSON 清单（已增加 avif）
+      # 3. 自动生成 JSON 清单
       - name: Generate gallery JSON
         shell: bash
         run: |
@@ -71,7 +77,7 @@ jobs:
           done
           echo "]" >> images/gallery.json
 
-      # 4. 提交并推送
+      # 4. 提交并推送（升级到 v5）
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
