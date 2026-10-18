@@ -13,19 +13,14 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
-      # 升级到 v5，消除 Node.js 20 的警告
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # 安装 ImageMagick 以及 AVIF 解码器插件
-      - name: Install ImageMagick and AVIF support
+      - name: Install ImageMagick
         run: |
           sudo apt-get update
-          sudo apt-get install -y imagemagick libheif-examples
-          # 解除 ImageMagick 对 AVIF 的安全限制（如果有的话）
-          sudo sed -i '/AVIF/d' /etc/ImageMagick-6/policy.xml || true
+          sudo apt-get install -y imagemagick
 
-      # 1. 生成缩略图
       - name: Generate thumbnails
         shell: bash
         run: |
@@ -36,28 +31,37 @@ jobs:
             if [[ "$filename" == *"readme"* ]]; then continue; fi
             
             echo "正在处理缩略图: $filename"
-            # 加入容错：如果某张图转换失败，打印警告但继续处理下一张，不中断整个任务
-            if ! convert "$img" -resize 300x "images/thumbnails/$filename"; then
-              echo "::warning::生成缩略图失败，可能是格式不支持: $filename"
+            ext="${filename##*.}"
+            name_no_ext="${filename%.*}"
+            
+            # 核心修改：如果是 avif 格式，缩略图保存为 jpg，确保 100% 兼容
+            if [[ "${ext,,}" == "avif" ]]; then
+              out_file="${name_no_ext}.jpg"
+            else
+              out_file="$filename"
+            fi
+            
+            if ! convert "$img" -resize 300x "images/thumbnails/$out_file"; then
+              echo "::warning::生成缩略图失败: $filename"
             fi
           done
 
-      # 2. 清理不再需要的“孤儿”缩略图
       - name: Clean up orphan thumbnails
         shell: bash
         run: |
+          # 同时清理 jpg, png, avif 后缀的缩略图
           for thumb in images/thumbnails/*.{jpg,jpeg,png,avif,JPG,JPEG,PNG,AVIF}; do
             [ -f "$thumb" ] || continue
             filename=$(basename "$thumb")
             if [[ "$filename" == *"readme"* ]]; then continue; fi
             
-            if [ ! -f "images/full/$filename" ]; then
-              echo "原图已被删除，清理多余缩略图: $filename"
+            # 检查原图是否存在（考虑 avif 转 jpg 的情况）
+            if [ ! -f "images/full/$filename" ] && [ ! -f "images/full/${filename%.*}.avif" ] && [ ! -f "images/full/${filename%.*}.AVIF" ]; then
+              echo "清理多余缩略图: $filename"
               rm "$thumb"
             fi
           done
 
-      # 3. 自动生成 JSON 清单
       - name: Generate gallery JSON
         shell: bash
         run: |
@@ -68,16 +72,23 @@ jobs:
             filename=$(basename "$img")
             if [[ "$filename" == *"readme"* ]]; then continue; fi
             
+            # JSON 中记录缩略图的实际文件名（avif 原图对应的是 jpg 缩略图）
+            ext="${filename##*.}"
+            name_no_ext="${filename%.*}"
+            thumb_name="$filename"
+            if [[ "${ext,,}" == "avif" ]]; then
+              thumb_name="${name_no_ext}.jpg"
+            fi
+            
             if [ "$first" = true ]; then
               first=false
             else
               echo "," >> images/gallery.json
             fi
-            echo "  \"$filename\"" >> images/gallery.json
+            echo "  \"$thumb_name\"" >> images/gallery.json
           done
           echo "]" >> images/gallery.json
 
-      # 4. 提交并推送（升级到 v5）
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
