@@ -1,0 +1,30 @@
+name: Generate Thumbnails
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'images/full/**'
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate thumbnails
+        uses: subic/ghaction-thumbnails@v1.1
+        with:
+          source: 'images/full'
+          output: 'images/thumbnails'
+          sizes: '300'
+
+      - name: Commit and push thumbnails
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "chore: auto-generate thumbnails [skip ci]"
+          file_pattern: 'images/thumbnails/*'
