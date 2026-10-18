@@ -18,7 +18,7 @@
         import { init } from 'https://unpkg.com/litelight-js@latest/dist/lite-light.min.js';
 
         // 1. 获取图片清单
-        fetch('images/gallery.json')
+        fetch('images/gallery.json?t=' + new Date().getTime())
             .then(response => response.json())
             .then(images => {
                 const container = document.getElementById('gallery-container');
