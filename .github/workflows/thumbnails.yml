@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   generate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install ImageMagick
         run: sudo apt-get update && sudo apt-get install -y imagemagick
@@ -75,8 +75,8 @@ jobs:
           echo "]" >> images/gallery.json
 
       # 4. 提交并推送
-      - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+- name: Commit and push changes
+  uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: auto-update thumbnails and gallery list [skip ci]"
           file_pattern: 'images/thumbnails/* images/gallery.json'
