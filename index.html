@@ -11,18 +11,31 @@
     </style>
 </head>
 <body>
-    <div class="gallery">
-        <img src="images/thumbnails/999c23fe97c34451a2c8740cced127ec_noop.png"
-             data-lightbox="images/full/999c23fe97c34451a2c8740cced127ec_noop.png"
-             alt="图片 1">
-        <img src="images/thumbnails/PFTmjGi1hzpfAC9.jpg"
-             data-lightbox="images/full/PFTmjGi1hzpfAC9.jpg"
-             alt="图片 2">
-    </div>
+    <!-- 保持为空，由 JS 动态填充 -->
+    <div class="gallery" id="gallery-container"></div>
 
     <script type="module">
         import { init } from 'https://unpkg.com/litelight-js@latest/dist/lite-light.min.js';
-        init();
+
+        // 1. 获取图片清单
+        fetch('images/gallery.json')
+            .then(response => response.json())
+            .then(images => {
+                const container = document.getElementById('gallery-container');
+                
+                // 2. 循环生成图片标签
+                images.forEach(name => {
+                    const img = document.createElement('img');
+                    img.src = `images/thumbnails/${name}`;
+                    img.setAttribute('data-lightbox', `images/full/${name}`);
+                    img.alt = name;
+                    container.appendChild(img);
+                });
+
+                // 3. 图片插入 DOM 后，初始化 LiteLight
+                init(); 
+            })
+            .catch(error => console.error('加载图片列表失败:', error));
     </script>
 </body>
 </html>
