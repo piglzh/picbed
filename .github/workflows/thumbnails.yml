@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'images/full/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -49,6 +50,20 @@ jobs:
       - name: Generate gallery JSON
         shell: bash
         run: |
+                - name: Generate gallery JSON
+        shell: bash
+        run: |
+          echo "=== 调试：images/full 目录内容 ==="
+          ls -la images/full
+          echo "=== 调试：find 匹配到的图片文件数 ==="
+          find images/full -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) | wc -l
+          echo "=== 调试：find 匹配到的具体文件名 ==="
+          find images/full -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \)
+          echo "=== 调试：当前 checkout 的 commit ==="
+          git log -1 --oneline
+
+          echo "[" > images/gallery.json
+          # ……下面保持你原来的 while 循环不变……
           echo "[" > images/gallery.json
           first=true
           while IFS= read -r -d '' img; do
