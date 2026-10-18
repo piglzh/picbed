@@ -16,45 +16,48 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 安装 ImageMagick
       - name: Install ImageMagick
         run: sudo apt-get update && sudo apt-get install -y imagemagick
 
-      # 1. 生成缩略图
+      # 1. 生成缩略图（已增加 avif）
       - name: Generate thumbnails
         shell: bash
         run: |
           mkdir -p images/thumbnails
-          for img in images/full/*.{jpg,jpeg,png,JPG,JPEG,PNG}; do
+          # 匹配新增了 avif
+          for img in images/full/*.{jpg,jpeg,png,avif,JPG,JPEG,PNG,AVIF}; do
             [ -f "$img" ] || continue
             filename=$(basename "$img")
             if [[ "$filename" == *"readme"* ]]; then continue; fi
+            
             echo "正在处理缩略图: $filename"
+            # 将 avif 转换为缩略图（注意：这里生成的缩略图依然保留 .avif 后缀）
             convert "$img" -resize 300x "images/thumbnails/$filename"
           done
 
-      # 2. 清理不再需要的“孤儿”缩略图
+      # 2. 清理不再需要的“孤儿”缩略图（已增加 avif）
       - name: Clean up orphan thumbnails
         shell: bash
         run: |
-          for thumb in images/thumbnails/*.{jpg,jpeg,png,JPG,JPEG,PNG}; do
+          for thumb in images/thumbnails/*.{jpg,jpeg,png,avif,JPG,JPEG,PNG,AVIF}; do
             [ -f "$thumb" ] || continue
             filename=$(basename "$thumb")
             if [[ "$filename" == *"readme"* ]]; then continue; fi
             
-            # 如果原图目录里找不到同名文件，说明原图被删了，清理掉缩略图
             if [ ! -f "images/full/$filename" ]; then
               echo "原图已被删除，清理多余缩略图: $filename"
               rm "$thumb"
             fi
           done
 
-      # 3. 自动生成 JSON 清单文件
+      # 3. 自动生成 JSON 清单（已增加 avif）
       - name: Generate gallery JSON
         shell: bash
         run: |
           echo "[" > images/gallery.json
           first=true
-          for img in images/full/*.{jpg,jpeg,png,JPG,JPEG,PNG}; do
+          for img in images/full/*.{jpg,jpeg,png,avif,JPG,JPEG,PNG,AVIF}; do
             [ -f "$img" ] || continue
             filename=$(basename "$img")
             if [[ "$filename" == *"readme"* ]]; then continue; fi
