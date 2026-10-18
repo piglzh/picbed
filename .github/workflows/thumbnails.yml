@@ -24,19 +24,31 @@ jobs:
         shell: bash
         run: |
           mkdir -p images/thumbnails
-          # 匹配常见图片格式（包括大写后缀）
           for img in images/full/*.{jpg,jpeg,png,JPG,JPEG,PNG}; do
             [ -f "$img" ] || continue
             filename=$(basename "$img")
-            # 跳过非图片文件（如 readme.md）
             if [[ "$filename" == *"readme"* ]]; then continue; fi
-            
             echo "正在处理缩略图: $filename"
-            # 生成固定宽度 300px 的缩略图，保存到 thumbnails 根目录
             convert "$img" -resize 300x "images/thumbnails/$filename"
           done
 
-      # 2. 自动生成 JSON 清单文件
+      # 2. 清理不再需要的“孤儿”缩略图
+      - name: Clean up orphan thumbnails
+        shell: bash
+        run: |
+          for thumb in images/thumbnails/*.{jpg,jpeg,png,JPG,JPEG,PNG}; do
+            [ -f "$thumb" ] || continue
+            filename=$(basename "$thumb")
+            if [[ "$filename" == *"readme"* ]]; then continue; fi
+            
+            # 如果原图目录里找不到同名文件，说明原图被删了，清理掉缩略图
+            if [ ! -f "images/full/$filename" ]; then
+              echo "原图已被删除，清理多余缩略图: $filename"
+              rm "$thumb"
+            fi
+          done
+
+      # 3. 自动生成 JSON 清单文件
       - name: Generate gallery JSON
         shell: bash
         run: |
@@ -55,12 +67,10 @@ jobs:
             echo "  \"$filename\"" >> images/gallery.json
           done
           echo "]" >> images/gallery.json
-          echo "生成的 gallery.json 内容如下："
-          cat images/gallery.json
 
-      # 3. 提交并推送
+      # 4. 提交并推送
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: auto-generate thumbnails and gallery list [skip ci]"
+          commit_message: "chore: auto-update thumbnails and gallery list [skip ci]"
           file_pattern: 'images/thumbnails/* images/gallery.json'
